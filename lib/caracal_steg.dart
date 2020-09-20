@@ -95,7 +95,7 @@ class EncodeDWTCommand extends Command {
     argParser.addOption('input', help: 'Input file to embed a message within');
     argParser.addOption('output', help: 'Output file to place resulting file in');
     argParser.addOption('lsb',
-        defaultsTo: '2',
+        defaultsTo: '3',
         allowed: ['0', '1', '2', '3', '4', '5', '6', '7'],
         help: 'Which Haar approximation bit to use (0 is least-significant bit, 7 is most-significant bit)');
   }
@@ -118,7 +118,7 @@ class EncodeDWTCommand extends Command {
 
     var inputImage = decodeImage(File(argResults['input']).readAsBytesSync());
     var message = argResults.rest.join(' ');
-    var repetitions = ((inputImage.length * 3) ~/ 4) ~/ (message.length * 256);
+    var repetitions = (inputImage.length * 3) ~/ (message.length * 256 * 4);
     var coder = DWTStegnanography.withECC(inputImage,
         BitMajorityRepetitionCorrection(HadamardErrorCorrection(), repetitions), int.parse(argResults['lsb']));
     coder.encodeMessage(message);
@@ -137,7 +137,7 @@ class DecodeLSBCommand extends Command {
     argParser.addOption('input', help: 'Input file to embed a message within');
     argParser.addOption('numChars', help: 'Length of embedded message');
     argParser.addOption('lsb',
-        defaultsTo: '2',
+        defaultsTo: '3',
         allowed: ['0', '1', '2', '3', '4', '5', '6', '7'],
         help: 'Which pixel RGB bit to use (0 is least-significant bit, 7 is most-significant bit)');
   }
@@ -151,7 +151,7 @@ class DecodeLSBCommand extends Command {
 
     var inputImage = decodeImage(File(argResults['input']).readAsBytesSync());
     var messageLength = int.parse(argResults['numChars']);
-    var repetitions = (inputImage.length * 3) ~/ (messageLength * 256);
+    var repetitions = (inputImage.length * 3) ~/ (messageLength * 256 * 4);
     var coder = LSBSteganography.withECC(
         inputImage,
         ValuePluralityRepetitionCorrection(HadamardErrorCorrection(), repetitions, (value) {
@@ -187,7 +187,7 @@ class DecodeDWTCommand extends Command {
 
     var inputImage = decodeImage(File(argResults['input']).readAsBytesSync());
     var messageLength = int.parse(argResults['numChars']);
-    var repetitions = ((inputImage.length * 3) ~/ 4) ~/ (messageLength * 256);
+    var repetitions = (inputImage.length * 3) ~/ (messageLength * 256 * 64);
     var coder = DWTStegnanography.withECC(
         inputImage,
         /*BitMajorityRepetitionCorrection(HadamardErrorCorrection(), repetitions, (value) {
