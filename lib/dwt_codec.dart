@@ -37,11 +37,12 @@ class DWTStegnanography extends StegInterface {
   Image encodeMessage(String message) {
     var helper = ImageDWTHelper(3);
     helper.haarT(image);
-    var haarMatrices = List<List<List<double>>>(3);
-    for(var color = 0; color < 3; color++) {
-      haarMatrices[color] = helper.approxMatrices[color].toList().map((element) => element.toList()).toList();
-    }
-
+    var haarMatrices = List<List<List<double>>>.generate(
+        3,
+        (color) => helper.approxMatrices[color]
+            .toList()
+            .map((element) => element.toList())
+            .toList());
     var cols = haarMatrices[0][0].length;
     var row = 0;
     var col = 0;

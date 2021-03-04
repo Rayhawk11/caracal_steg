@@ -60,33 +60,35 @@ class EncodeLSBCommand extends Command {
 
   @override
   void run() {
-    if (argResults['input'] == null ||
-        !FileSystemEntity.isFileSync(argResults['input'])) {
-      print('Provided input file path "${argResults['input']}" is not a file');
+    var resultsCopy = argResults!;
+    if (resultsCopy['input'] == null ||
+        !FileSystemEntity.isFileSync(resultsCopy['input'])) {
+      print('Provided input file path "${resultsCopy['input']}" is not a file');
       exit(1);
     }
-    if (argResults['output'] == null ||
-        FileSystemEntity.isDirectorySync(argResults['output'])) {
+    if (resultsCopy['output'] == null ||
+        FileSystemEntity.isDirectorySync(resultsCopy['output'])) {
       print(
-          'Provided output file path "${argResults['output']}" is a directory or null');
+          'Provided output file path "${resultsCopy['output']}" is a directory or null');
       exit(1);
     }
 
-    if (argResults.rest.isEmpty) {
+    if (resultsCopy.rest.isEmpty) {
       print(usage);
       exit(1);
     }
 
-    var inputImage = decodeImage(File(argResults['input']).readAsBytesSync());
-    var message = argResults.rest.join(' ');
+    var inputImage = decodeImage(File(resultsCopy['input']).readAsBytesSync())!;
+    var message = resultsCopy.rest.join(' ');
     var repetitions = (inputImage.length * 3) ~/ (message.length * 256);
     var coder = LSBSteganography.withECC(
         inputImage,
-        ValuePluralityRepetitionCorrection(HadamardErrorCorrection(), repetitions),
-        int.parse(argResults['lsb']));
+        ValuePluralityRepetitionCorrection(
+            HadamardErrorCorrection(), repetitions),
+        int.parse(resultsCopy['lsb']));
     var image = coder.encodeMessage(message);
-    File(argResults['output']).writeAsBytesSync(
-        encodeJpg(image, quality: int.parse(argResults['quality'])));
+    File(resultsCopy['output']).writeAsBytesSync(
+        encodeJpg(image, quality: int.parse(resultsCopy['quality'])));
     print('Encoded image with ${message.length} characters');
   }
 }
@@ -120,59 +122,61 @@ class EncodeDWTCommand extends Command {
 
   @override
   void run() {
-    if (argResults['input'] == null ||
-        !FileSystemEntity.isFileSync(argResults['input'])) {
-      print('Provided input file path "${argResults['input']}" is not a file');
+    var resultsCopy = argResults!;
+    if (resultsCopy['input'] == null ||
+        !FileSystemEntity.isFileSync(resultsCopy['input'])) {
+      print('Provided input file path "${resultsCopy['input']}" is not a file');
       exit(1);
     }
-    if (argResults['output'] == null ||
-        FileSystemEntity.isDirectorySync(argResults['output'])) {
+    if (resultsCopy['output'] == null ||
+        FileSystemEntity.isDirectorySync(resultsCopy['output'])) {
       print(
-          'Provided output file path "${argResults['output']}" is a directory or null');
+          'Provided output file path "${resultsCopy['output']}" is a directory or null');
       exit(1);
     }
 
-    if (argResults.rest.isEmpty) {
+    if (resultsCopy.rest.isEmpty) {
       print(usage);
       exit(1);
     }
 
-    var inputImage = decodeImage(File(argResults['input']).readAsBytesSync());
+    var inputImage = decodeImage(File(resultsCopy['input']).readAsBytesSync())!;
 
-    if(argResults['width'] != null) {
-      inputImage = copyResize(inputImage, width: int.parse(argResults['width']));
+    if (resultsCopy['width'] != null) {
+      inputImage =
+          copyResize(inputImage, width: int.parse(resultsCopy['width']));
     }
 
- 
-    var message = argResults.rest.join(' ');
+    var message = resultsCopy.rest.join(' ');
     var repetitions = (inputImage.length * 3) ~/ (message.length * 256 * 64);
     var coder = DWTStegnanography.withECC(
         inputImage,
-        ValuePluralityRepetitionCorrection(HadamardErrorCorrection(), repetitions),
-        int.parse(argResults['lsb']));
+        ValuePluralityRepetitionCorrection(
+            HadamardErrorCorrection(), repetitions),
+        int.parse(resultsCopy['lsb']));
     var image = coder.encodeMessage(message);
     var outputImage =
-        encodeJpg(image, quality: int.parse(argResults['quality']));
-    File(argResults['output']).writeAsBytesSync(outputImage);
+        encodeJpg(image, quality: int.parse(resultsCopy['quality']));
+    File(resultsCopy['output']).writeAsBytesSync(outputImage);
     print('Encoded image with ${message.length} characters');
-    List<int> reencodedBytes;
-    Image decodedOutputImage;
-    if (argResults['psnr'] || argResults['null'] != null) {
+    late List<int> reencodedBytes;
+    late Image decodedOutputImage;
+    if (resultsCopy['psnr'] || resultsCopy['null'] != null) {
       reencodedBytes =
-          encodeJpg(inputImage, quality: int.parse(argResults['quality']));
+          encodeJpg(inputImage, quality: int.parse(resultsCopy['quality']));
     }
-    if(argResults['psnr'] || argResults['decodability']) {
+    if (resultsCopy['psnr'] || resultsCopy['decodability']) {
       decodedOutputImage = decodeJpg(outputImage);
     }
-    if (argResults['psnr']) {
+    if (resultsCopy['psnr']) {
       var unmodifiedOutputImage = decodeJpg(reencodedBytes);
       print(
           'PSNR compared to image without a message is ${psnr(unmodifiedOutputImage, decodedOutputImage)}dB');
     }
-    if (argResults['null'] != null) {
-      File(argResults['null']).writeAsBytesSync(reencodedBytes);
+    if (resultsCopy['null'] != null) {
+      File(resultsCopy['null']).writeAsBytesSync(reencodedBytes);
     }
-    if (argResults['decodability']) {
+    if (resultsCopy['decodability']) {
       var decoder = DWTStegnanography.withECC(
           decodedOutputImage,
           ValuePluralityRepetitionCorrection(
@@ -206,14 +210,15 @@ class DecodeLSBCommand extends Command {
 
   @override
   void run() {
-    if (argResults['input'] == null ||
-        !FileSystemEntity.isFileSync(argResults['input'])) {
-      print('Provided input file path "${argResults['input']}" is not a file');
+    var resultsCopy = argResults!;
+    if (resultsCopy['input'] == null ||
+        !FileSystemEntity.isFileSync(resultsCopy['input'])) {
+      print('Provided input file path "${resultsCopy['input']}" is not a file');
       exit(1);
     }
 
-    var inputImage = decodeImage(File(argResults['input']).readAsBytesSync());
-    var messageLength = int.parse(argResults['numChars']);
+    var inputImage = decodeImage(File(resultsCopy['input']).readAsBytesSync())!;
+    var messageLength = int.parse(resultsCopy['numChars']);
     var repetitions = (inputImage.length * 3) ~/ (messageLength * 256);
     var coder = LSBSteganography.withECC(
         inputImage,
@@ -221,7 +226,7 @@ class DecodeLSBCommand extends Command {
             HadamardErrorCorrection(), repetitions, (value) {
           return (value >= 32) && (value <= 126);
         }),
-        int.parse(argResults['lsb']));
+        int.parse(resultsCopy['lsb']));
     print(coder.decodeMessage(messageLength));
   }
 }
@@ -245,20 +250,21 @@ class DecodeDWTCommand extends Command {
 
   @override
   void run() {
-    if (argResults['input'] == null ||
-        !FileSystemEntity.isFileSync(argResults['input'])) {
-      print('Provided input file path "${argResults['input']}" is not a file');
+    var resultsCopy = argResults!;
+    if (resultsCopy['input'] == null ||
+        !FileSystemEntity.isFileSync(resultsCopy['input'])) {
+      print('Provided input file path "${resultsCopy['input']}" is not a file');
       exit(1);
     }
 
-    var inputImage = decodeImage(File(argResults['input']).readAsBytesSync());
+    var inputImage = decodeImage(File(resultsCopy['input']).readAsBytesSync())!;
     if (inputImage.width % 8 != 0 || inputImage.height % 8 != 0) {
       var shrunkWidth = inputImage.width - inputImage.width % 8;
       var shrunkHeight = inputImage.height - inputImage.height % 8;
       inputImage =
           copyResize(inputImage, width: shrunkWidth, height: shrunkHeight);
     }
-    var messageLength = int.parse(argResults['numChars']);
+    var messageLength = int.parse(resultsCopy['numChars']);
     var repetitions = (inputImage.length * 3) ~/ (messageLength * 256 * 64);
     var coder = DWTStegnanography.withECC(
         inputImage,
@@ -267,7 +273,7 @@ class DecodeDWTCommand extends Command {
           return ((value >= 32) && (value <= 126));
         }),
         //BitMajorityRepetitionCorrection(HadamardErrorCorrection(), repetitions),
-        int.parse(argResults['lsb']));
+        int.parse(resultsCopy['lsb']));
     print(coder.decodeMessage(messageLength));
   }
 }

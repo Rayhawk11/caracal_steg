@@ -152,7 +152,7 @@ List<Matrix> imageToMatrices(Image img) {
 }
 
 Image matricesToImage(
-    List<Matrix> matrices, ExifData exif, ICCProfileData iccp) {
+    List<Matrix> matrices, ExifData? exif, ICCProfileData? iccp) {
   var img = Image(matrices[0].rowsNum, matrices[0].columnsNum,
       exif: exif, iccp: iccp);
   for (var x = 0; x < img.width; x++) {
@@ -170,26 +170,28 @@ List<Matrix> splitMatrix(Matrix m) {
   }
   var rowsPer = m.rowsNum ~/ 2;
   var colsPer = m.columnsNum ~/ 2;
-  var results = List<Matrix>(4);
-  var t1 = List<Vector>(rowsPer);
-  var t2 = List<Vector>(rowsPer);
-  for (var rowIndex = 0; rowIndex < rowsPer; rowIndex++) {
-    var row = m[rowIndex];
-    t1[rowIndex] = row.subvector(0, colsPer);
-    t2[rowIndex] = row.subvector(colsPer);
+
+  var firstRows = m.rows.take(rowsPer);
+  var top_generator = firstRows
+      .map((row) => [row.subvector(0, colsPer), row.subvector(colsPer)]);
+
+  var t1 = <Vector>[];
+  var t2 = <Vector>[];
+  for (var vectors in top_generator) {
+    t1.add(vectors[0]);
+    t2.add(vectors[1]);
   }
-  results[0] = Matrix.fromRows(t1);
-  results[1] = Matrix.fromRows(t2);
-  var t3 = List<Vector>(rowsPer);
-  var t4 = List<Vector>(rowsPer);
-  for (var rowIndex = rowsPer; rowIndex < m.rowsNum; rowIndex++) {
-    var row = m[rowIndex];
-    t3[rowIndex - rowsPer] = row.subvector(0, colsPer);
-    t4[rowIndex - rowsPer] = row.subvector(colsPer);
+
+  var t3 = <Vector>[];
+  var t4 = <Vector>[];
+  var secondRows = m.rows.skip(rowsPer);
+  var bottom_generator = secondRows
+      .map((row) => [row.subvector(0, colsPer), row.subvector(colsPer)]);
+  for (var vectors in bottom_generator) {
+    t3.add(vectors[0]);
+    t4.add(vectors[1]);
   }
-  results[2] = Matrix.fromRows(t3);
-  results[3] = Matrix.fromRows(t4);
-  return results;
+  return [t1, t2, t3, t4].map((e) => Matrix.fromRows(e)).toList();
 }
 
 Matrix mergeMatrices(List<Matrix> matrices) {
@@ -214,28 +216,25 @@ Matrix mergeMatrices(List<Matrix> matrices) {
 
 class ImageDWTHelper {
   int levels;
-  List<List<List<Matrix>>> secondaryMatrices;
-  List<Matrix> approxMatrices;
-  ExifData exif;
-  ICCProfileData iccp;
+  late List<List<List<Matrix>>> secondaryMatrices;
+  late List<Matrix> approxMatrices;
+  late ExifData? exif;
+  late ICCProfileData? iccp;
 
-  ImageDWTHelper(this.levels) {
-    secondaryMatrices = List.filled(levels, null);
-  }
+  ImageDWTHelper(this.levels);
 
   void haarT(Image image) {
     exif = image.exif;
     iccp = image.iccProfile;
     var workingMatrices = imageToMatrices(image);
-    for (var level = 0; level < levels; level++) {
-      var currentSecondaryMatrices = List<List<Matrix>>(3);
-      for (var color = 0; color < 3; color++) {
+    secondaryMatrices = List<List<List<Matrix>>>.generate(levels, (level) {
+      var currentSecondaryMatrices = List<List<Matrix>>.generate(3, (color) {
         var haarMatrices = splitMatrix(fastHaarT2D(workingMatrices[color]));
         workingMatrices[color] = haarMatrices[0];
-        currentSecondaryMatrices[color] = haarMatrices.sublist(1);
-      }
-      secondaryMatrices[level] = currentSecondaryMatrices;
-    }
+        return haarMatrices.sublist(1);
+      });
+      return currentSecondaryMatrices;
+    });
     approxMatrices = workingMatrices;
   }
 
@@ -256,7 +255,7 @@ void main() {
   var helper = ImageDWTHelper(3);
   var testImage =
       decodeImage(File('data/IMG_0042_Smaller.jpg').readAsBytesSync());
-  helper.haarT(testImage);
+  helper.haarT(testImage!);
   var outputImage = helper.haarIT();
   var correctPixels = 0;
   for (var x = 0; x < testImage.width; x++) {

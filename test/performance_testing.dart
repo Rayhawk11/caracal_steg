@@ -4,7 +4,7 @@ import 'dart:io';
 
 void main() {
   var matrix = imageToMatrices(
-      decodeImage(File('data/IMG_0042.JPG').readAsBytesSync()))[0];
+      decodeImage(File('data/IMG_0042.JPG').readAsBytesSync())!)[0];
   var stopwatch = Stopwatch()..start();
   var slowResult = splitMatrix(matrix)[0];
   var t1 = stopwatch.elapsedMilliseconds;
