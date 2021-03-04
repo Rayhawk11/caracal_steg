@@ -173,7 +173,8 @@ class ImageDWTHelper {
 
 void main() {
   var helper = ImageDWTHelper(3);
-  var testImage = decodeImage(File('data/IMG_0042_Mini.jpg').readAsBytesSync());
+  var testImage =
+      decodeImage(File('data/IMG_0042_Smallerz.jpg').readAsBytesSync());
   helper.haarTransform(testImage);
   var originalRGB = helper.rgb;
   var outputImage = helper.inverseHaarTransform();

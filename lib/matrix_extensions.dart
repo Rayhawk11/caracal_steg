@@ -26,3 +26,9 @@ extension MatrixExtensions on Matrix {
     });
   }
 }
+
+extension VectorExtensions on Vector {
+  Vector truncate() {
+    return mapToVector((value) => value.floorToDouble());
+  }
+}

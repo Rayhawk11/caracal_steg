@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:caracal_steg/dwt_codec.dart';
 import 'package:caracal_steg/hadamard_codec.dart';
+import 'package:caracal_steg/statistics.dart';
 import 'package:image/image.dart';
 import 'package:caracal_steg/lsb_codec.dart';
 import 'package:caracal_steg/repetition_codecs.dart';
@@ -26,7 +27,8 @@ class DecodeCommand extends Command {
   final name = 'decode';
 
   @override
-  final description = 'Decode a message from a file created by the encode command.';
+  final description =
+      'Decode a message from a file created by the encode command.';
 
   DecodeCommand() {
     addSubcommand(DecodeLSBCommand());
@@ -47,21 +49,26 @@ class EncodeLSBCommand extends Command {
         allowed: [for (var i = 0; i <= 100; i++) i.toString()],
         help: 'JPEG quality value of output file');
     argParser.addOption('input', help: 'Input file to embed a message within');
-    argParser.addOption('output', help: 'Output file to place resulting file in');
+    argParser.addOption('output',
+        help: 'Output file to place resulting file in');
     argParser.addOption('lsb',
         defaultsTo: '3',
         allowed: ['0', '1', '2', '3', '4', '5', '6', '7'],
-        help: 'Which pixel RGB bit to use (0 is least-significant bit, 7 is most-significant bit)');
+        help:
+            'Which pixel RGB bit to use (0 is least-significant bit, 7 is most-significant bit)');
   }
 
   @override
   void run() {
-    if (argResults['input'] == null || !FileSystemEntity.isFileSync(argResults['input'])) {
+    if (argResults['input'] == null ||
+        !FileSystemEntity.isFileSync(argResults['input'])) {
       print('Provided input file path "${argResults['input']}" is not a file');
       exit(1);
     }
-    if (argResults['output'] == null || FileSystemEntity.isDirectorySync(argResults['output'])) {
-      print('Provided output file path "${argResults['output']}" is a directory or null');
+    if (argResults['output'] == null ||
+        FileSystemEntity.isDirectorySync(argResults['output'])) {
+      print(
+          'Provided output file path "${argResults['output']}" is a directory or null');
       exit(1);
     }
 
@@ -73,10 +80,14 @@ class EncodeLSBCommand extends Command {
     var inputImage = decodeImage(File(argResults['input']).readAsBytesSync());
     var message = argResults.rest.join(' ');
     var repetitions = (inputImage.length * 3) ~/ (message.length * 256);
-    var coder = LSBSteganography.withECC(inputImage,
-        ValuePluralityRepetitionCorrection(HadamardErrorCorrection(), repetitions), int.parse(argResults['lsb']));
-    coder.encodeMessage(message);
-    File(argResults['output']).writeAsBytesSync(encodeJpg(coder.image, quality: int.parse(argResults['quality'])));
+    var coder = LSBSteganography.withECC(
+        inputImage,
+        ValuePluralityRepetitionCorrection(HadamardErrorCorrection(), repetitions),
+        int.parse(argResults['lsb']));
+    var image = coder.encodeMessage(message);
+    File(argResults['output']).writeAsBytesSync(
+        encodeJpg(image, quality: int.parse(argResults['quality'])));
+    print('Encoded image with ${message.length} characters');
   }
 }
 
@@ -93,21 +104,31 @@ class EncodeDWTCommand extends Command {
         allowed: [for (var i = 0; i <= 100; i++) i.toString()],
         help: 'JPEG quality value of output file');
     argParser.addOption('input', help: 'Input file to embed a message within');
-    argParser.addOption('output', help: 'Output file to place resulting file in');
+    argParser.addOption('output',
+        help: 'Output file to place resulting file in');
+    argParser.addOption('width', help: 'Width to resize to');
+    argParser.addOption('null',
+        help: 'File to place reencoded image lacking a message in');
     argParser.addOption('lsb',
-        defaultsTo: '3',
-        allowed: ['0', '1', '2', '3', '4', '5', '6', '7'],
-        help: 'Which Haar approximation bit to use (0 is least-significant bit, 7 is most-significant bit)');
+        defaultsTo: '2',
+        allowed: ['1', '2', '3', '4', '5', '6', '7'],
+        help:
+            'Which Haar approximation bit to use (0 is least-significant bit, 7 is most-significant bit)');
+    argParser.addFlag('psnr', help: 'Whether to print PSNR');
+    argParser.addFlag('decodability', help: 'Whether to print decodability');
   }
 
   @override
   void run() {
-    if (argResults['input'] == null || !FileSystemEntity.isFileSync(argResults['input'])) {
+    if (argResults['input'] == null ||
+        !FileSystemEntity.isFileSync(argResults['input'])) {
       print('Provided input file path "${argResults['input']}" is not a file');
       exit(1);
     }
-    if (argResults['output'] == null || FileSystemEntity.isDirectorySync(argResults['output'])) {
-      print('Provided output file path "${argResults['output']}" is a directory or null');
+    if (argResults['output'] == null ||
+        FileSystemEntity.isDirectorySync(argResults['output'])) {
+      print(
+          'Provided output file path "${argResults['output']}" is a directory or null');
       exit(1);
     }
 
@@ -117,12 +138,52 @@ class EncodeDWTCommand extends Command {
     }
 
     var inputImage = decodeImage(File(argResults['input']).readAsBytesSync());
+
+    if(argResults['width'] != null) {
+      inputImage = copyResize(inputImage, width: int.parse(argResults['width']));
+    }
+
+ 
     var message = argResults.rest.join(' ');
-    var repetitions = (inputImage.length * 3) ~/ (message.length * 256 * 4);
-    var coder = DWTStegnanography.withECC(inputImage,
-        BitMajorityRepetitionCorrection(HadamardErrorCorrection(), repetitions), int.parse(argResults['lsb']));
-    coder.encodeMessage(message);
-    File(argResults['output']).writeAsBytesSync(encodeJpg(coder.image, quality: int.parse(argResults['quality'])));
+    var repetitions = (inputImage.length * 3) ~/ (message.length * 256 * 64);
+    var coder = DWTStegnanography.withECC(
+        inputImage,
+        ValuePluralityRepetitionCorrection(HadamardErrorCorrection(), repetitions),
+        int.parse(argResults['lsb']));
+    var image = coder.encodeMessage(message);
+    var outputImage =
+        encodeJpg(image, quality: int.parse(argResults['quality']));
+    File(argResults['output']).writeAsBytesSync(outputImage);
+    print('Encoded image with ${message.length} characters');
+    List<int> reencodedBytes;
+    Image decodedOutputImage;
+    if (argResults['psnr'] || argResults['null'] != null) {
+      reencodedBytes =
+          encodeJpg(inputImage, quality: int.parse(argResults['quality']));
+    }
+    if(argResults['psnr'] || argResults['decodability']) {
+      decodedOutputImage = decodeJpg(outputImage);
+    }
+    if (argResults['psnr']) {
+      var unmodifiedOutputImage = decodeJpg(reencodedBytes);
+      print(
+          'PSNR compared to image without a message is ${psnr(unmodifiedOutputImage, decodedOutputImage)}dB');
+    }
+    if (argResults['null'] != null) {
+      File(argResults['null']).writeAsBytesSync(reencodedBytes);
+    }
+    if (argResults['decodability']) {
+      var decoder = DWTStegnanography.withECC(
+          decodedOutputImage,
+          ValuePluralityRepetitionCorrection(
+              HadamardErrorCorrection(), repetitions, (value) {
+            return (value >= 32) && (value <= 126);
+          }));
+      var decodedMessage = decoder.decodeMessage(message.length);
+      print(
+          'Decodability is ${stringSimilarity(message, decodedMessage) * 100}%');
+      print("Decoded message is '$decodedMessage'");
+    }
   }
 }
 
@@ -139,22 +200,25 @@ class DecodeLSBCommand extends Command {
     argParser.addOption('lsb',
         defaultsTo: '3',
         allowed: ['0', '1', '2', '3', '4', '5', '6', '7'],
-        help: 'Which pixel RGB bit to use (0 is least-significant bit, 7 is most-significant bit)');
+        help:
+            'Which pixel RGB bit to use (0 is least-significant bit, 7 is most-significant bit)');
   }
 
   @override
   void run() {
-    if (argResults['input'] == null || !FileSystemEntity.isFileSync(argResults['input'])) {
+    if (argResults['input'] == null ||
+        !FileSystemEntity.isFileSync(argResults['input'])) {
       print('Provided input file path "${argResults['input']}" is not a file');
       exit(1);
     }
 
     var inputImage = decodeImage(File(argResults['input']).readAsBytesSync());
     var messageLength = int.parse(argResults['numChars']);
-    var repetitions = (inputImage.length * 3) ~/ (messageLength * 256 * 4);
+    var repetitions = (inputImage.length * 3) ~/ (messageLength * 256);
     var coder = LSBSteganography.withECC(
         inputImage,
-        ValuePluralityRepetitionCorrection(HadamardErrorCorrection(), repetitions, (value) {
+        ValuePluralityRepetitionCorrection(
+            HadamardErrorCorrection(), repetitions, (value) {
           return (value >= 32) && (value <= 126);
         }),
         int.parse(argResults['lsb']));
@@ -173,35 +237,47 @@ class DecodeDWTCommand extends Command {
     argParser.addOption('input', help: 'Input file to embed a message within');
     argParser.addOption('numChars', help: 'Length of embedded message');
     argParser.addOption('lsb',
-        defaultsTo: '3',
-        allowed: ['0', '1', '2', '3', '4', '5', '6', '7'],
-        help: 'Which Haar approximation bit to use (0 is least-significant bit, 7 is most-significant bit)');
+        defaultsTo: '2',
+        allowed: ['1', '2', '3', '4', '5', '6', '7'],
+        help:
+            'Which Haar approximation bit to use (0 is least-significant bit, 7 is most-significant bit)');
   }
 
   @override
   void run() {
-    if (argResults['input'] == null || !FileSystemEntity.isFileSync(argResults['input'])) {
+    if (argResults['input'] == null ||
+        !FileSystemEntity.isFileSync(argResults['input'])) {
       print('Provided input file path "${argResults['input']}" is not a file');
       exit(1);
     }
 
     var inputImage = decodeImage(File(argResults['input']).readAsBytesSync());
+    if (inputImage.width % 8 != 0 || inputImage.height % 8 != 0) {
+      var shrunkWidth = inputImage.width - inputImage.width % 8;
+      var shrunkHeight = inputImage.height - inputImage.height % 8;
+      inputImage =
+          copyResize(inputImage, width: shrunkWidth, height: shrunkHeight);
+    }
     var messageLength = int.parse(argResults['numChars']);
     var repetitions = (inputImage.length * 3) ~/ (messageLength * 256 * 64);
     var coder = DWTStegnanography.withECC(
         inputImage,
-        /*BitMajorityRepetitionCorrection(HadamardErrorCorrection(), repetitions, (value) {
-          return (value >= 32) && (value <= 126);
-        }),*/
-        BitMajorityRepetitionCorrection(HadamardErrorCorrection(), repetitions),
+        ValuePluralityRepetitionCorrection(
+            HadamardErrorCorrection(), repetitions, (value) {
+          return ((value >= 32) && (value <= 126));
+        }),
+        //BitMajorityRepetitionCorrection(HadamardErrorCorrection(), repetitions),
         int.parse(argResults['lsb']));
     print(coder.decodeMessage(messageLength));
   }
 }
 
 void main(List<String> arguments) {
-  var runner = CommandRunner('caracal_steg', 'Dart steganography command-line application')
+  var runner = CommandRunner(
+      'caracal_steg', 'Dart steganography command-line application')
     ..addCommand(EncodeCommand())
     ..addCommand(DecodeCommand());
+  var stopwatch = Stopwatch()..start();
   runner.run(arguments);
+  print('Took ${stopwatch.elapsedMilliseconds}ms');
 }
