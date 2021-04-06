@@ -98,7 +98,7 @@ class EncodeDWTCommand extends Command {
   final name = 'dwt';
 
   @override
-  final description = 'Use the discrete wavelet transform method of encoding.';
+  final description = 'Use the Haar wavelet transform method of encoding.';
 
   EncodeDWTCommand() {
     argParser.addOption('quality',
@@ -145,6 +145,12 @@ class EncodeDWTCommand extends Command {
     if (resultsCopy['width'] != null) {
       inputImage =
           copyResize(inputImage, width: int.parse(resultsCopy['width']));
+    }
+    if (inputImage.width % 8 != 0 || inputImage.height % 8 != 0) {
+      var shrunkWidth = inputImage.width - inputImage.width % 8;
+      var shrunkHeight = inputImage.height - inputImage.height % 8;
+      inputImage =
+          copyResize(inputImage, width: shrunkWidth, height: shrunkHeight);
     }
 
     var message = resultsCopy.rest.join(' ');
@@ -236,7 +242,7 @@ class DecodeDWTCommand extends Command {
   final name = 'dwt';
 
   @override
-  final description = 'Use the least-significant bit method of decoding.';
+  final description = 'Use the Haar wavelet transform method of decoding.';
 
   DecodeDWTCommand() {
     argParser.addOption('input', help: 'Input file to embed a message within');
