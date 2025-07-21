@@ -1,22 +1,18 @@
 import 'package:ml_linalg/linalg.dart';
 import 'package:caracal_steg/matrix_extensions.dart';
 import 'package:image/image.dart';
-import 'package:image/src/exif_data.dart';
 import 'package:image/src/icc_profile_data.dart';
 import 'dart:typed_data';
 import 'dart:io';
 
 Matrix rowHaarT(Matrix input) {
   var evens = input.sample(
-      columnIndices: input.columnIndices.where((element) => element & 1 == 0),
-      rowIndices: input.rowIndices);
+      columnIndices: input.columnIndices.where((element) => element & 1 == 0), rowIndices: input.rowIndices);
   var odds = input.sample(
-      columnIndices: input.columnIndices.where((element) => element & 1 != 0),
-      rowIndices: input.rowIndices);
+      columnIndices: input.columnIndices.where((element) => element & 1 != 0), rowIndices: input.rowIndices);
   var average = ((evens + odds) / 2).truncate();
   var difference = evens - odds;
-  return Matrix.fromColumns(
-      average.columns.toList() + difference.columns.toList());
+  return Matrix.fromColumns(average.columns.toList() + difference.columns.toList());
 }
 
 Matrix fastRowHaarT(Matrix input) {
@@ -32,12 +28,10 @@ Matrix fastRowHaarT(Matrix input) {
 }
 
 Matrix rowHaarIT(Matrix input) {
-  var averages = input.sample(
-      columnIndices: input.columnIndices.take(input.columnsNum ~/ 2),
-      rowIndices: input.rowIndices);
-  var differences = input.sample(
-      columnIndices: input.columnIndices.skip(input.columnsNum ~/ 2),
-      rowIndices: input.rowIndices);
+  var averages =
+      input.sample(columnIndices: input.columnIndices.take(input.columnsNum ~/ 2), rowIndices: input.rowIndices);
+  var differences =
+      input.sample(columnIndices: input.columnIndices.skip(input.columnsNum ~/ 2), rowIndices: input.rowIndices);
   var x = averages + ((differences + 1) / 2).truncate();
   var y = x - differences;
   var columns = <Vector>[];
@@ -64,11 +58,9 @@ Matrix fastRowHaarIT(Matrix input) {
 
 Matrix colHaarT(Matrix input) {
   var evens = input.sample(
-      columnIndices: input.columnIndices,
-      rowIndices: input.rowIndices.where((element) => element & 1 == 0));
+      columnIndices: input.columnIndices, rowIndices: input.rowIndices.where((element) => element & 1 == 0));
   var odds = input.sample(
-      columnIndices: input.columnIndices,
-      rowIndices: input.rowIndices.where((element) => element & 1 != 0));
+      columnIndices: input.columnIndices, rowIndices: input.rowIndices.where((element) => element & 1 != 0));
   var average = ((evens + odds) / 2).truncate();
   var difference = evens - odds;
   return Matrix.fromRows(average.rows.toList() + difference.rows.toList());
@@ -87,12 +79,10 @@ Matrix fastColHaarT(Matrix input) {
 }
 
 Matrix colHaarIT(Matrix input) {
-  var averages = input.sample(
-      columnIndices: input.columnIndices,
-      rowIndices: input.rowIndices.take(input.rowsNum ~/ 2));
-  var differences = input.sample(
-      columnIndices: input.columnIndices,
-      rowIndices: input.rowIndices.skip(input.rowsNum ~/ 2));
+  var averages =
+      input.sample(columnIndices: input.columnIndices, rowIndices: input.rowIndices.take(input.rowsNum ~/ 2));
+  var differences =
+      input.sample(columnIndices: input.columnIndices, rowIndices: input.rowIndices.skip(input.rowsNum ~/ 2));
   var x = averages + ((differences + 1) / 2).truncate();
   var y = x - differences;
   var columns = <Vector>[];
@@ -134,8 +124,8 @@ Matrix fastHaarIT2D(Matrix input) {
 }
 
 List<Matrix> imageToMatrices(Image img) {
-  var rgbResultsTmp = List<List<List<double>>>.generate(3,
-      (index) => List.generate(img.width, (indexX) => Float32List(img.height)));
+  var rgbResultsTmp =
+      List<List<List<double>>>.generate(3, (index) => List.generate(img.width, (indexX) => Float32List(img.height)));
   for (var x = 0; x < img.width; x++) {
     for (var y = 0; y < img.height; y++) {
       var pixel = img.getPixel(x, y);
@@ -144,21 +134,14 @@ List<Matrix> imageToMatrices(Image img) {
       rgbResultsTmp[2][x][y] = ((pixel & (0xFF << 16)) >> 16).toDouble();
     }
   }
-  return [
-    Matrix.fromList(rgbResultsTmp[0]),
-    Matrix.fromList(rgbResultsTmp[1]),
-    Matrix.fromList(rgbResultsTmp[2])
-  ];
+  return [Matrix.fromList(rgbResultsTmp[0]), Matrix.fromList(rgbResultsTmp[1]), Matrix.fromList(rgbResultsTmp[2])];
 }
 
-Image matricesToImage(
-    List<Matrix> matrices, ExifData? exif, ICCProfileData? iccp) {
-  var img = Image(matrices[0].rowsNum, matrices[0].columnsNum,
-      exif: exif, iccp: iccp);
+Image matricesToImage(List<Matrix> matrices, ExifData? exif, ICCProfileData? iccp) {
+  var img = Image(matrices[0].rowsNum, matrices[0].columnsNum, exif: exif, iccp: iccp);
   for (var x = 0; x < img.width; x++) {
     for (var y = 0; y < img.height; y++) {
-      img.setPixelRgba(x, y, matrices[0][x][y].truncate(),
-          matrices[1][x][y].truncate(), matrices[2][x][y].truncate());
+      img.setPixelRgba(x, y, matrices[0][x][y].truncate(), matrices[1][x][y].truncate(), matrices[2][x][y].truncate());
     }
   }
   return img;
@@ -172,8 +155,7 @@ List<Matrix> splitMatrix(Matrix m) {
   var colsPer = m.columnsNum ~/ 2;
 
   var firstRows = m.rows.take(rowsPer);
-  var top_generator = firstRows
-      .map((row) => [row.subvector(0, colsPer), row.subvector(colsPer)]);
+  var top_generator = firstRows.map((row) => [row.subvector(0, colsPer), row.subvector(colsPer)]);
 
   var t1 = <Vector>[];
   var t2 = <Vector>[];
@@ -185,8 +167,7 @@ List<Matrix> splitMatrix(Matrix m) {
   var t3 = <Vector>[];
   var t4 = <Vector>[];
   var secondRows = m.rows.skip(rowsPer);
-  var bottom_generator = secondRows
-      .map((row) => [row.subvector(0, colsPer), row.subvector(colsPer)]);
+  var bottom_generator = secondRows.map((row) => [row.subvector(0, colsPer), row.subvector(colsPer)]);
   for (var vectors in bottom_generator) {
     t3.add(vectors[0]);
     t4.add(vectors[1]);
@@ -210,8 +191,7 @@ Matrix mergeMatrices(List<Matrix> matrices) {
     matrices[2][row].forEach(addElement);
     matrices[3][row].forEach(addElement);
   }
-  return Matrix.fromFlattenedList(
-      elements, matrices[0].rowsNum * 2, matrices[0].columnsNum * 2);
+  return Matrix.fromFlattenedList(elements, matrices[0].rowsNum * 2, matrices[0].columnsNum * 2);
 }
 
 class ImageDWTHelper {
@@ -242,8 +222,7 @@ class ImageDWTHelper {
     var currentApproxMatrices = List<Matrix>.from(approxMatrices);
     for (var level = levels - 1; level >= 0; level--) {
       for (var color = 0; color < 3; color++) {
-        var merged = mergeMatrices(
-            [currentApproxMatrices[color]] + secondaryMatrices[level][color]);
+        var merged = mergeMatrices([currentApproxMatrices[color]] + secondaryMatrices[level][color]);
         currentApproxMatrices[color] = fastHaarIT2D(merged);
       }
     }
@@ -253,8 +232,7 @@ class ImageDWTHelper {
 
 void main() {
   var helper = ImageDWTHelper(3);
-  var testImage =
-      decodeImage(File('data/IMG_0042_Smaller.jpg').readAsBytesSync());
+  var testImage = decodeImage(File('data/IMG_0042_Smaller.jpg').readAsBytesSync());
   helper.haarT(testImage!);
   var outputImage = helper.haarIT();
   var correctPixels = 0;
@@ -265,6 +243,5 @@ void main() {
       }
     }
   }
-  print(
-      'Correct pixel proportion: ${correctPixels / (testImage.width * testImage.height)}');
+  print('Correct pixel proportion: ${correctPixels / (testImage.width * testImage.height)}');
 }
