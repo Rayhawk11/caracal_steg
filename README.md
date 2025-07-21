@@ -10,8 +10,8 @@ Please see the [full report](https://doi.org/10.18130/tw10-fd71) for details.
 This project is not being actively developed, monitored, or maintained. It may not work with current versions of Dart and Flutter. At the time, it was an attempt to create a user-friendly minimum viable product in a short amount of time. The code does not reflect my current professional standards for documentation and best practices, but it remains a project I'm proud of for turning academic research into a real-world minimally usable app.
 
 ## Acknowledgments
-Please note that this is an implementation project, not a research project; the techniques presented are not my own. The primary algorithm used in this impelmentation was created by [Xu, J., Sung, A. H., Shi, P., & Liu, Q. (2004)](https://doi.org/10.1109/ITCC.2004.1286737). See also the full report linked above for additional acknwoledgements.
+Please note that this is an implementation project, not a research project; the techniques presented are not my own. The primary algorithm used in this implementation was created by [Xu, J., Sung, A. H., Shi, P., & Liu, Q. (2004)](https://doi.org/10.1109/ITCC.2004.1286737). See also the full report linked above for additional acknowledgments.
 
 Special thanks to [Professor David Wu](https://engineering.virginia.edu/faculty/david-wu), my technical advisor, without whom this project would not have been a success.
 
-Also shoutout to [Ilia Gyrdymov](https://github.com/gyrdym) and the [ml_linalg](https://github.com/gyrdym/ml_linalg) project which was a core library in this implementation. Without the project's wonderful support in quickly resolving an [issue](https://github.com/gyrdym/ml_linalg/issues/100), this project would have been much harder!
+Also, shoutout to [Ilia Gyrdymov](https://github.com/gyrdym) and the [ml_linalg](https://github.com/gyrdym/ml_linalg) project which was a core library in this implementation. Without the project's wonderful support in quickly resolving an [issue](https://github.com/gyrdym/ml_linalg/issues/100), this project would have been much harder!
